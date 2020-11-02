@@ -349,38 +349,6 @@ async def defaultLogin(page, email, password):
         pass # button not appeared, ok...
         
     return True
-    
-
-async def polimiLogin(page, username, password):
-    await page.waitForSelector('input[type="email"]')
-    tmpEmail = "11111111@polimi.it"
-    await page.keyboard.type(tmpEmail)
-    await page.click('input[type="submit"]')
-    
-    print('Filling in Servizi Online login form...')
-    await page.waitForSelector('input[id="login"]')
-    await page.type('input#login', username) # mette il codice persona
-    await page.type('input#password', password) # mette la password
-    await page.click('button[name="evn_conferma"]') # clicca sul tasto "Accedi"
-    
-    try:
-        await page.waitForSelector('div[class="Message ErrorMessage"]', { 'timeout': 1000 })
-        print(colored('Bad credentials', 'red'))
-        asyncio.get_event_loop().stop()
-    except:
-        pass # tutto ok
-    
-    try:
-        await page.waitForSelector('button[name="evn_continua"]', { 'timeout': 1000 }) # password is expiring
-        await page.click('button[name="evn_continua"]')
-    except:
-        pass # password is not expiring
-    
-    try:
-        await page.waitForSelector('input[id="idBtn_Back"]', { 'timeout': 2000 })
-        await page.click('input[id="idBtn_Back"]') # clicca sul tasto "No" per rimanere connessi
-    except:
-        pass # bottone non apparso, ok...
 
 
 async def handleEmail(email):
@@ -468,7 +436,6 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--password', type=str, required=False)
     parser.add_argument('-o', '--outputDirectory', type=str, required=False, default='videos')
     parser.add_argument('-q', '--quality', type=int, required=False, help='Video Quality, usually [0-5]')
-    parser.add_argument('-m', '--polimi', type=bool, required=False, default=False, help='Use PoliMi Login. If set, use Codice Persona as username')
     parser.add_argument('-k', '--noKeyring', type=bool, required=False, default=False, help='Do not use system keyring')
     parser.add_argument('-c', '--conn', type=int, required=False, default=16, help='Number of simultaneous connections [1-16]')
 
