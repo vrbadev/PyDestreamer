@@ -70,7 +70,7 @@ def isUtilityInstalled(utility):
 
 def sanityChecks():
     if isUtilityInstalled('aria2c'):
-        print(colored('PyAria2 is installed and ready.', 'green'))
+        print(colored('Aria2c is installed and ready.', 'green'))
     else:
         print(colored('You need aria2c in $PATH or this script\'s folder for this to work!', 'red'))
         exit(1)
@@ -125,12 +125,9 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
     print('Navigating to STS login page...')
     await page.goto('https://web.microsoftstream.com/', options={ 'waitUntil': 'networkidle2' })
     
-    if argv.polimi is True:
-        await polimiLogin(page, email, password)
-    else:
-        if not await defaultLogin(page, email, password):
-            await browser.close()
-            return
+    if not await defaultLogin(page, email, password):
+        await browser.close()
+        return
     
     await page.waitForRequest(lambda req: 'microsoftstream.com/' in req.url and req.method == 'GET')
     
@@ -444,5 +441,4 @@ if __name__ == "__main__":
     sanityChecks()
     
     asyncio.run(downloadVideo(argv.videoUrls, argv.username, argv.password, argv.outputDirectory))
-    
     
