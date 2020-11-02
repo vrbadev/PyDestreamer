@@ -16,7 +16,7 @@ Install the latest **ffmpeg** release (download from <https://github.com/BtbN/FF
 ```
 usage: PyDestreamer [-h] -v VIDEOURLS [VIDEOURLS ...] [-u USERNAME]
                     [-p PASSWORD] [-o OUTPUTDIRECTORY] [-q QUALITY]
-                    [-m POLIMI] [-k NOKEYRING] [-c CONN]
+                    [-k NOKEYRING] [-c CONN]
 
 Python port of destreamer.
 Project originally based on https://github.com/snobu/destreamer.
@@ -31,8 +31,6 @@ optional arguments:
   -o OUTPUTDIRECTORY, --outputDirectory OUTPUTDIRECTORY
   -q QUALITY, --quality QUALITY
                         Video Quality, usually [0-5]
-  -m POLIMI, --polimi POLIMI
-                        Use PoliMi Login. If set, use Codice Persona as username
   -k NOKEYRING, --noKeyring NOKEYRING
                         Do not use system keyring
   -c CONN, --conn CONN  Number of simultaneous connections [1-16]
