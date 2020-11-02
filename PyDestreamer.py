@@ -2,12 +2,10 @@
 """
 PyDestreamer
 Unofficial Python port of https://github.com/snobu/destreamer
-(from a fork https://github.com/sup3rgiu/PyDestreamer/)
+(from a fork https://github.com/sup3rgiu/MStreamDownloader/)
 
-@author: vrbadev
-
-Dependencies:
-pip install pyppeteer keyring google-cloud-datastore nest_asyncio asyncio termcolor m3u8 ffmpeg-python
+@author: @vrbadev
+Available under MIT license.
 """
 
 import argparse
@@ -464,7 +462,7 @@ async def signal_handler(sig, frame):
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     
-    parser = argparse.ArgumentParser(prog='PyDestreamer', description='Python port of destreamer.\nProject originally based on https:#☺github.com/snobu/destreamer.\nFork powered by @vrbadev.', epilog='examples:\n\tStandard usage:\n\t\tpython %(prog)s.py -v https:#☺web.microsoftstream.com/video/...\n', formatter_class=argparse.RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(prog='PyDestreamer', description='Python port of destreamer.\nProject originally based on https://github.com/snobu/destreamer.\nFork powered by @vrbadev.', epilog='examples:\n\tStandard usage:\n\t\tpython %(prog)s.py -v https://web.microsoftstream.com/video/...\n', formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-v', '--videoUrls', type=str, nargs='+', required=True)
     parser.add_argument('-u', '--username', type=str, required=False, help='Your Microsoft Email')
     parser.add_argument('-p', '--password', type=str, required=False)
