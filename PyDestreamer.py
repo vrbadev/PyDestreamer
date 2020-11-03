@@ -86,9 +86,6 @@ def sanityChecks():
         print('Creating output directory:', argv.outputDirectory)
 
 
-async def handlerTargetCreated(target):
-    print(target.url)
-
 async def downloadVideo(videoUrls, email, password, outputDirectory):
     global browser
     email = await handleEmail(email)
@@ -117,17 +114,19 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
                 pass # X11 is missing. Can't use keytar
      
     print('\nLaunching headless Chrome to perform the OpenID Connect dance...')
-    browser = await pyppeteer.launch(options={'headless': True, 'args': ['--disable-dev-shm-usage', '--lang=en-US']})
-    #browser.on('targetcreated', lambda t: asyncio.ensure_future(handlerTargetCreated(t)))
+    browser = await pyppeteer.launch(options={'headless': not argv.noHeadless and not argv.manualLogin, 'args': ['--no-sandbox', '--disable-dev-shm-usage', '--lang=en-US', '--window-size=800x600']})
     
     page = await browser.newPage()
     
     print('Navigating to STS login page...')
     await page.goto('https://web.microsoftstream.com/', options={ 'waitUntil': 'networkidle2' })
     
-    if not await defaultLogin(page, email, password):
-        await browser.close()
-        return
+    if not argv.manualLogin:
+        if not await defaultLogin(page, email, password):
+            await browser.close()
+            return
+    else:
+        await prompt("Login manually inside the browser and then press Enter.")
     
     await page.waitForRequest(lambda req: 'microsoftstream.com/' in req.url and req.method == 'GET')
     
@@ -246,7 +245,7 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
         if os.name == 'nt':
             keyReplacement = local_key_path.replace("\\", "/")
         else:
-            keyReplacement = 'file://' + local_key_path
+            keyReplacement = os.path.abspath(local_key_path)
         
         
         # creates two m3u8 files:
@@ -270,7 +269,7 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
             n = 1
         
         print("Downloading video fragments (aria2c)...")
-        aria2cCmd = 'aria2c -i "' + video_full_path + '" -j ' + str(n) + ' -x ' + str(n) + ' -d "' + os.path.join(full_tmp_dir, 'video_segments') + '" --disable-ipv6 --conditional-get=true --header="Cookie:' + cookie + '"';
+        aria2cCmd = 'aria2c -i "' + video_full_path + '" -j ' + str(n) + ' -x ' + str(n) + ' -d "' + os.path.join(full_tmp_dir, 'video_segments') + '" --disable-ipv6 --auto-file-renaming=false --allow-overwrite=false --conditional-get=true --header="Cookie:' + cookie + '"';
         p = subprocess.Popen(aria2cCmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
         print("Result:", out.decode().strip().rsplit("\n", 2)[-1]) 
@@ -293,7 +292,7 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
             file.write(audio_tmp)
            
         print("Downloading audio fragments (aria2c)...")
-        aria2cCmd = 'aria2c -i "' + audio_full_path + '" -j ' + str(n) + ' -x ' + str(n) + ' -d "' + os.path.join(full_tmp_dir, 'audio_segments') + '" --disable-ipv6 --conditional-get=true --header="Cookie:' + cookie + '"';
+        aria2cCmd = 'aria2c -i "' + audio_full_path + '" -j ' + str(n) + ' -x ' + str(n) + ' -d "' + os.path.join(full_tmp_dir, 'audio_segments') + '" --disable-ipv6 --auto-file-renaming=false --allow-overwrite=false --conditional-get=true --header="Cookie:' + cookie + '"';
         p = subprocess.Popen(aria2cCmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
         print("Result:", out.decode().strip().rsplit("\n", 2)[-1]) 
@@ -310,9 +309,7 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
            
         # remove tmp dir
         shutil.rmtree(full_tmp_dir)
-    
-    print("\nAt this point Chrome's job is done, shutting it down...")
-    await browser.close()
+        
     print(colored('Done!\n', 'green'))
     
 
@@ -428,13 +425,15 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     
     parser = argparse.ArgumentParser(prog='PyDestreamer', description='Python port of destreamer.\nProject originally based on https://github.com/snobu/destreamer.\nFork powered by @vrbadev.', epilog='examples:\n\tStandard usage:\n\t\tpython %(prog)s.py -v https://web.microsoftstream.com/video/...\n', formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('-v', '--videoUrls', type=str, nargs='+', required=True)
-    parser.add_argument('-u', '--username', type=str, required=False, help='Your Microsoft Email')
-    parser.add_argument('-p', '--password', type=str, required=False)
-    parser.add_argument('-o', '--outputDirectory', type=str, required=False, default='videos')
+    parser.add_argument('-v', '--videoUrls', type=str, nargs='+', required=True, help='One or more links to Microsoft Stream videos')
+    parser.add_argument('-u', '--username', type=str, required=False, help='Your Microsoft Account e-mail')
+    parser.add_argument('-p', '--password', type=str, required=False, help='Your Microsoft Account password')
+    parser.add_argument('-o', '--outputDirectory', type=str, required=False, default='videos', help='Save directory for videos and temporary files')
     parser.add_argument('-q', '--quality', type=int, required=False, help='Video Quality, usually [0-5]')
-    parser.add_argument('-k', '--noKeyring', type=bool, required=False, default=False, help='Do not use system keyring')
+    parser.add_argument('-k', '--noKeyring', type=bool, required=False, default=False, help='Do not use system keyring (saved password)')
     parser.add_argument('-c', '--conn', type=int, required=False, default=16, help='Number of simultaneous connections [1-16]')
+    parser.add_argument('--noHeadless', required=False, default=False, action="store_true", help="Don not run Chromium in headless mode")
+    parser.add_argument('--manualLogin', required=False, default=False, action="store_true", help="Force login manually")
 
     argv = parser.parse_args(["-h"] if len(sys.argv) == 1 else sys.argv[1:])
     
