@@ -86,6 +86,11 @@ def sanityChecks():
         print('Creating output directory:', argv.outputDirectory)
 
 
+def osFixPath(path):
+    path = re.compile(r"[\/]").split(path)
+    return os.path.abspath(os.path.join(*path))
+
+
 async def downloadVideo(videoUrls, email, password, outputDirectory):
     global browser
     email = await handleEmail(email)
@@ -114,7 +119,7 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
                 pass # X11 is missing. Can't use keytar
      
     print('\nLaunching headless Chrome to perform the OpenID Connect dance...')
-    browser = await pyppeteer.launch(options={'headless': not argv.noHeadless and not argv.manualLogin, 'args': ['--no-sandbox', '--disable-dev-shm-usage', '--lang=en-US', '--window-size=800x600']})
+    browser = await pyppeteer.launch(options={'headless': not argv.noHeadless and not argv.manualLogin, 'args': ['--no-sandbox', '--disable-dev-shm-usage', '--lang=en-US']})
     
     page = await browser.newPage()
     
@@ -162,9 +167,10 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
         if not os.path.exists(full_tmp_dir):
             os.makedirs(full_tmp_dir)
         else:
-            pass
-            #shutil.rmtree(full_tmp_dir)
-            #os.makedirs(full_tmp_dir)
+            if argv.overwrite:
+                print("Overwrite enabled - removing old temporary files")
+                shutil.rmtree(full_tmp_dir)
+                os.makedirs(full_tmp_dir)
         
         title = obj["name"].strip()
         print('\nVideo title is:', title)
@@ -207,7 +213,7 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
                 # fix this for multiple audio tracks
                 audioObj = parsedManifest['playlists'][i]
             i += 1
-            
+        
         #  if quality is passed as argument use that, otherwise prompt
         if argv.quality is None:
             question = question + 'Choose the desired resolution: '
@@ -234,13 +240,21 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
         
         keyUri = parsedManifest['segments'][0]['key']['uri']
         cdp = await page.target.createCDPSession()
-        await cdp.send('Page.setDownloadBehavior', { 'behavior': 'allow', 'downloadPath': full_tmp_dir})
+        local_key_path = os.path.join(full_tmp_dir, 'protectionKey')
+        await cdp.send('Page.setDownloadBehavior', { 'behavior': 'allow', 'downloadPath': osFixPath(full_tmp_dir)})
         try:
             # should download protectionKey file, but throws error: net::ERR_ABORTED
             await page.goto(keyUri, options={'headers': {'Cookie': cookie}})
         except pyppeteer.errors.PageError as e:
-            print("Key downloaded")
-        local_key_path = os.path.join(full_tmp_dir, 'protectionKey')
+            pass
+        
+        await asyncio.sleep(2)
+        if os.path.exists(local_key_path):
+            print(colored("Protection key downloaded.", "green"))
+        else:
+            print(colored("Failed to download the protection key!", "red"))
+            await browser.close()
+            return
         
         if os.name == 'nt':
             keyReplacement = local_key_path.replace("\\", "/")
@@ -268,11 +282,13 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
         elif n < 1:
             n = 1
         
+        aria2c_codes = ['All downloads were successful.','An unknown error occurred.','Time out occurred.','A resource was not found.','Aria2 saw the specified number of "Resource not found" error. See --max-file-not-found option.','A download aborted because download speed was too slow. See --lowest-speed-limit option.','Network problem occurred.','There were unfinished downloads. This error is only reported if all finished downloads were successful and there were unfinished downloads in a queue when aria2 exited by pressing ctrl-c by an user or sending term or int signal.','Remote server did not support resume when resume was required to complete download.','There was not enough disk space available.','Piece length was different from one in .Aria2 control file. See --allow-piece-length-change option.','Aria2 was downloading same file at that moment.','Aria2 was downloading same info hash torrent at that moment.','File already existed. See --allow-overwrite option.','Renaming file failed. See --auto-file-renaming option.','Aria2 could not open existing file.','Aria2 could not create new file or truncate existing file.','File I/o error occurred.','Aria2 could not create directory.','Name resolution failed.','Aria2 could not parse metalink document.','Ftp command failed.','Http response header was bad or unexpected.','Too many redirects occurred.','Http authorization failed.','Aria2 could not parse bencoded file (usually ".Torrent" file).','".Torrent" file was corrupted or missing information that aria2 needed.','Magnet uri was bad.','Bad/unrecognized option was given or unexpected option argument was given.','The remote server was unable to handle the request due to a temporary overloading or maintenance.','Aria2 could not parse json-rpc request.','Reserved. Not used.','Checksum validation failed.']
+
         print("Downloading video fragments (aria2c)...")
         aria2cCmd = 'aria2c -i "' + video_full_path + '" -j ' + str(n) + ' -x ' + str(n) + ' -d "' + os.path.join(full_tmp_dir, 'video_segments') + '" --disable-ipv6 --auto-file-renaming=false --allow-overwrite=false --conditional-get=true --header="Cookie:' + cookie + '"';
         p = subprocess.Popen(aria2cCmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = p.communicate()
-        print("Result:", out.decode().strip().rsplit("\n", 2)[-1]) 
+        p.communicate()
+        print(colored("Return code: %d (%s)", "green" if p.returncode == 0 else "red") % (p.returncode, aria2c_codes[p.returncode]))
         
         # download async. I'm Speed
         # **** AUDIO ****
@@ -294,23 +310,39 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
         print("Downloading audio fragments (aria2c)...")
         aria2cCmd = 'aria2c -i "' + audio_full_path + '" -j ' + str(n) + ' -x ' + str(n) + ' -d "' + os.path.join(full_tmp_dir, 'audio_segments') + '" --disable-ipv6 --auto-file-renaming=false --allow-overwrite=false --conditional-get=true --header="Cookie:' + cookie + '"';
         p = subprocess.Popen(aria2cCmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = p.communicate()
-        print("Result:", out.decode().strip().rsplit("\n", 2)[-1]) 
+        p.communicate()
+        print(colored("Return code: %d (%s)", "green" if p.returncode == 0 else "red") % (p.returncode, aria2c_codes[p.returncode]))
            
+
         # *** MERGE audio and video segements in an mp4 file ***
         if os.path.exists(os.path.join(outputDirectory, title+'.mp4')):
             title = title + '-' + str(time.time_ns())
         
-        print("Joining fragments (ffmpeg)...")
-        ffmpegCmd = 'ffmpeg -protocol_whitelist file,http,https,tcp,tls,crypto -allowed_extensions ALL -i "' + os.path.abspath(audio_tmp_path) + '" -protocol_whitelist file,http,https,tcp,tls,crypto -allowed_extensions ALL -i "' + os.path.abspath(video_tmp_path) + '" -async 1 -c copy -bsf:a aac_adtstoasc -n "' + os.path.abspath(os.path.join(outputDirectory, title)) + '.mp4"'
-            
+        videoPath = os.path.abspath(os.path.join(outputDirectory, title+".mp4"))
+
+        print("Merging fragments (ffmpeg) into MP4...")
+        ffmpegCmd = 'ffmpeg -protocol_whitelist file,http,https,tcp,tls,crypto -allowed_extensions ALL -i "' + os.path.abspath(audio_tmp_path) + '" -protocol_whitelist file,http,https,tcp,tls,crypto -allowed_extensions ALL -i "' + os.path.abspath(video_tmp_path) + '" -async 1 -c copy -bsf:a aac_adtstoasc -n "' + videoPath + '"'
+
         p = subprocess.Popen(ffmpegCmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p.communicate()
-           
-        # remove tmp dir
-        shutil.rmtree(full_tmp_dir)
+        noerr = p.returncode == 0 and os.path.exists(videoPath)
+        print(colored("Return code: %d, file exists: %s", "green" if noerr else "red") % (p.returncode, str(os.path.exists(videoPath))))
+
+        if noerr:
+            print(colored('Video saved as: \'%s\'\n', 'green') % videoPath)
+            
+            # remove tmp dir
+            if not argv.keepTemp:
+                shutil.rmtree(full_tmp_dir)
+            else:
+                print("Keeping video temporary files as requested.")
+        else:
+            print(colored('Failed to process the video with ffmpeg! Keeping temporary files.\n', 'red'))
+
         
-    print(colored('Done!\n', 'green'))
+        
+    await browser.close()
+    print(colored('All jobs done!\n', 'green'))
     
 
 async def defaultLogin(page, email, password):
@@ -331,7 +363,7 @@ async def defaultLogin(page, email, password):
     
     try:
         await page.waitForSelector('span[id="errorText"]', { 'timeout': 1000 })
-        print(colored('Bad password', 'red'))
+        print(colored('Bad password!', 'red'))
         return False
     except:
         pass # password ok
@@ -353,7 +385,7 @@ async def handleEmail(email):
                 with open('./config.json', 'r') as file:
                     data = json.load(file)
                     email = data["email"]
-                    print('Reusing previously saved email/username: %s\nIf you need to change it, use the -u argument' % email)
+                    print('Reusing previously saved email/username: %s\nIf you need to change it, use the -u argument.' % email)
             except Exception as e:
                 print(e)
                 print(colored('There has been an error parsing your informations. Continuing in the manual way...\n', 'red'))
@@ -434,10 +466,13 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--conn', type=int, required=False, default=16, help='Number of simultaneous connections [1-16]')
     parser.add_argument('--noHeadless', required=False, default=False, action="store_true", help="Don not run Chromium in headless mode")
     parser.add_argument('--manualLogin', required=False, default=False, action="store_true", help="Force login manually")
+    parser.add_argument('--overwrite', required=False, default=False, action="store_true", help="Overwrite downloaded temporary files")
+    parser.add_argument('--keepTemp', required=False, default=False, action="store_true", help="Do not remove temporary files")
 
     argv = parser.parse_args(["-h"] if len(sys.argv) == 1 else sys.argv[1:])
     
     sanityChecks()
     
     asyncio.run(downloadVideo(argv.videoUrls, argv.username, argv.password, argv.outputDirectory))
+    
     
