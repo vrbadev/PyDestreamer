@@ -25,7 +25,7 @@ Most of them should be included in default python3 installation, the rest can be
 
 ```
 usage: PyDestreamer [-h] -v VIDEOURLS [VIDEOURLS ...] [-u USERNAME] [-p PASSWORD] [-o OUTPUTDIRECTORY] [-q QUALITY]
-                    [-k NOKEYRING] [-c CONN] [--noHeadless] [--manualLogin]
+                    [-k NOKEYRING] [-c CONN] [--noHeadless] [--manualLogin] [--overwrite] [--keepTemp]
 
 Python port of destreamer.
 Project originally based on https://github.com/snobu/destreamer.
@@ -48,6 +48,8 @@ optional arguments:
   -c CONN, --conn CONN  Number of simultaneous connections [1-16]
   --noHeadless          Don not run Chromium in headless mode
   --manualLogin         Force login manually
+  --overwrite           Overwrite downloaded temporary files
+  --keepTemp            Do not remove temporary files
 
 examples:
         Standard usage:
