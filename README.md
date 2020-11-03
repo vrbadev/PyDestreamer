@@ -6,18 +6,26 @@ This project was inspired by <https://github.com/snobu/destreamer>, rewritten in
 ## Setup
 You need Python 3.x to run the script.
 
-Make sure you have installed these packages, eg. using pip: 
-
-```pip install argparse asyncio html json keyring m3u8 nest_asyncio pyppeteer re requests_async shutil signal subprocess time urllib termcolor prompt_toolkit```
-
+### Windows specific step
 Extract the latest **ffmpeg** release (download from <https://github.com/BtbN/FFmpeg-Builds/releases>) and **aria2c** (download from <https://github.com/aria2/aria2/releases>) either into arbitrary directory and don't forget to add paths to PATH environtment variable, or simply into the directory containing the python script.
+
+### Linux specific step
+On a fresh Debian install, run
+```
+sudo apt-get update
+sudo apt-get install ffmpeg aria2 python3 python3-pip
+```
+
+Make sure you have installed all required modules.
+Most of them should be included in default python3 installation, the rest can be installed using pip:
+
+```pip install m3u8 nest_asyncio pyppeteer requests_async termcolor prompt_toolkit```
 
 ## Usage
 
 ```
-usage: PyDestreamer [-h] -v VIDEOURLS [VIDEOURLS ...] [-u USERNAME]
-                    [-p PASSWORD] [-o OUTPUTDIRECTORY] [-q QUALITY]
-                    [-k NOKEYRING] [-c CONN]
+usage: PyDestreamer [-h] -v VIDEOURLS [VIDEOURLS ...] [-u USERNAME] [-p PASSWORD] [-o OUTPUTDIRECTORY] [-q QUALITY]
+                    [-k NOKEYRING] [-c CONN] [--noHeadless] [--manualLogin]
 
 Python port of destreamer.
 Project originally based on https://github.com/snobu/destreamer.
@@ -26,17 +34,22 @@ Fork powered by @vrbadev.
 optional arguments:
   -h, --help            show this help message and exit
   -v VIDEOURLS [VIDEOURLS ...], --videoUrls VIDEOURLS [VIDEOURLS ...]
+                        One or more links to Microsoft Stream videos
   -u USERNAME, --username USERNAME
-                        Your Microsoft Email
+                        Your Microsoft Account e-mail
   -p PASSWORD, --password PASSWORD
+                        Your Microsoft Account password
   -o OUTPUTDIRECTORY, --outputDirectory OUTPUTDIRECTORY
+                        Save directory for videos and temporary files
   -q QUALITY, --quality QUALITY
                         Video Quality, usually [0-5]
   -k NOKEYRING, --noKeyring NOKEYRING
-                        Do not use system keyring
+                        Do not use system keyring (saved password)
   -c CONN, --conn CONN  Number of simultaneous connections [1-16]
+  --noHeadless          Don not run Chromium in headless mode
+  --manualLogin         Force login manually
 
 examples:
-	Standard usage:
-		python PyDestreamer.py -v https://web.microsoftstream.com/video/...
+        Standard usage:
+                python PyDestreamer.py -v https://web.microsoftstream.com/video/...
 ```
