@@ -8,10 +8,10 @@ Latest python script is available [here on github](https://github.com/vrbadev/Py
 ## Setup
 You need Python 3.x to run the script.
 
-### Windows specific step
+### Windows-specific steps
 Extract the latest **ffmpeg** release (download from <https://github.com/BtbN/FFmpeg-Builds/releases>) and **aria2c** (download from <https://github.com/aria2/aria2/releases>) either into arbitrary directory and don't forget to add paths to PATH environtment variable, or simply into the directory containing the python script.
 
-### Linux specific step
+### Linux-specific steps
 On a fresh Debian install, run
 ```
 sudo apt-get update
@@ -22,6 +22,12 @@ Make sure you have installed all required modules.
 Most of them should be included in default python3 installation, the rest can be installed using pip:
 
 ```pip install m3u8 nest_asyncio pyppeteer requests_async termcolor prompt_toolkit```
+
+### Login process settings
+The function ```async def defaultLogin(page, email, password)``` tries to find specific HTML elements in the login form on Microsoft Stream website. It is usually composed of default Microsoft login form and a form specific for your university/company. Element identifiers used in the python script are working for the CTU login, but you will probably need to change them slightly.
+
+Elements corresponding to ```input[type="email"]```, ```input[type="submit"]``` and ```div[id="usernameError"]``` are common as they are located at the default Microsoft login form. When username is entered and submit button pressed the form brings you to your university/company login form - username is copied automatically, but elements ```input[type="password"]```, ```span[id="submitButton"]``` and ```span[id="errorText"]``` **may be different** in your case. Easiest way to find the correct identifiers is to perform the login manually with Chrome Web Inspector opened and focused on the required elements, then you should be able to find them in the HTML code. If the login is successful it will redirect you back to Microsoft login form to choose if password should be remembered, the "No" button corresponds to ```input[id="idBtn_Back"]```. That is the end of the login process followed by redirection to Microsoft Stream homepage.
+
 
 ## Usage
 
