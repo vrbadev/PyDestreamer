@@ -3,6 +3,8 @@ Python port of destreamer - Microsoft Stream video downloader.
 
 This project was inspired by <https://github.com/snobu/destreamer>, rewritten into Python from <https://github.com/sup3rgiu/MStreamDownloader>.
 
+Latest python script is available [here on github](https://github.com/vrbadev/PyDestreamer/).
+
 ## Setup
 You need Python 3.x to run the script.
 
