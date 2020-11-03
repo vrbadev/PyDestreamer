@@ -6,10 +6,11 @@ This project was inspired by <https://github.com/snobu/destreamer>, rewritten in
 ## Setup
 You need Python 3.x to run the script.
 
-Make sure you have installed these packages: 
+Make sure you have installed these packages, eg. using pip: 
+
 ```pip install argparse asyncio html json keyring m3u8 nest_asyncio pyppeteer re requests_async shutil signal subprocess time urllib termcolor prompt_toolkit```
 
-Install the latest **ffmpeg** release (download from <https://github.com/BtbN/FFmpeg-Builds/releases>) and **aria2c** (download from <https://github.com/aria2/aria2/releases>), or just paste the executables into directory containing the python script.
+Extract the latest **ffmpeg** release (download from <https://github.com/BtbN/FFmpeg-Builds/releases>) and **aria2c** (download from <https://github.com/aria2/aria2/releases>) either into arbitrary directory and don't forget to add paths to PATH environtment variable, or simply into the directory containing the python script.
 
 ## Usage
 
