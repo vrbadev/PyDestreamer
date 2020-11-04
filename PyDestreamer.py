@@ -224,8 +224,8 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
                 print(colored('Desired quality is not available for this video (available range: 0-%d)\nI am going to use the best resolution available:' % (count-1), 'yellow'), parsedManifest["playlists"][count-1]['resolution'])
                 res_choice = count-1
             else:
-                res_choice = argv.quality
-                print(colored('Selected resolution:', 'yellow'), parsedManifest["playlists"][res_choice]['resolution'])
+                res_choice = int(argv.quality)
+                print(colored('Selected resolution:', 'yellow'), video_options[res_choice]['stream_info']['resolution'])
         
         videoObj = video_options[res_choice]
            
