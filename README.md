@@ -33,7 +33,8 @@ Elements corresponding to ```input[type="email"]```, ```input[type="submit"]``` 
 
 ```
 usage: PyDestreamer [-h] -v VIDEOURLS [VIDEOURLS ...] [-u USERNAME] [-p PASSWORD] [-o OUTPUTDIRECTORY] [-q QUALITY]
-                    [-k NOKEYRING] [-c CONN] [--noHeadless] [--manualLogin] [--overwrite] [--keepTemp]
+                    [-k NOKEYRING] [-c CONN] [-f FORMAT] [--noHeadless] [--manualLogin] [--overwrite] [--keepTemp]
+                    [--showCmd]
 
 Python port of destreamer.
 Project originally based on https://github.com/snobu/destreamer.
@@ -54,10 +55,13 @@ optional arguments:
   -k NOKEYRING, --noKeyring NOKEYRING
                         Do not use system keyring (saved password)
   -c CONN, --conn CONN  Number of simultaneous connections [1-16]
+  -f FORMAT, --format FORMAT
+                        Output video format, supported by ffmpeg
   --noHeadless          Don not run Chromium in headless mode
   --manualLogin         Force login manually
   --overwrite           Overwrite downloaded temporary files
   --keepTemp            Do not remove temporary files
+  --showCmd             Show aria2c and ffmpeg commands executed (for debugging)
 
 examples:
         Standard usage:
