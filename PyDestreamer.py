@@ -183,6 +183,8 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
             title = 'Lesson ' + uploadDate + ' - ' + title
         else:
             pass # print("no upload date found")
+        
+        title = re.sub('[^0-9a-zA-Z]+', '_', title)
    
         playbackUrls = obj["playbackUrls"]
         hlsUrl = ''
@@ -286,6 +288,9 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
 
         print("Downloading video fragments (aria2c)...")
         aria2cCmd = 'aria2c -i "' + video_full_path + '" -j ' + str(n) + ' -x ' + str(n) + ' -d "' + os.path.join(full_tmp_dir, 'video_segments') + '" --disable-ipv6 --auto-file-renaming=false --allow-overwrite=false --conditional-get=true --header="Cookie:' + cookie + '"';
+        if argv.showCmd:
+            print(colored(aria2cCmd, 'yellow'))
+
         p = subprocess.Popen(aria2cCmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p.communicate()
         print(colored("Return code: %d (%s)", "green" if p.returncode == 0 else "red") % (p.returncode, aria2c_codes[p.returncode]))
@@ -309,19 +314,24 @@ async def downloadVideo(videoUrls, email, password, outputDirectory):
            
         print("Downloading audio fragments (aria2c)...")
         aria2cCmd = 'aria2c -i "' + audio_full_path + '" -j ' + str(n) + ' -x ' + str(n) + ' -d "' + os.path.join(full_tmp_dir, 'audio_segments') + '" --disable-ipv6 --auto-file-renaming=false --allow-overwrite=false --conditional-get=true --header="Cookie:' + cookie + '"';
+        if argv.showCmd:
+            print(colored(aria2cCmd, 'yellow'))
+
         p = subprocess.Popen(aria2cCmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p.communicate()
         print(colored("Return code: %d (%s)", "green" if p.returncode == 0 else "red") % (p.returncode, aria2c_codes[p.returncode]))
            
 
-        # *** MERGE audio and video segements in an mp4 file ***
-        if os.path.exists(os.path.join(outputDirectory, title+'.mp4')):
+        # *** MERGE audio and video segements in an video file ***
+        if os.path.exists(os.path.join(outputDirectory, title + '.' + argv.format)):
             title = title + '-' + str(time.time_ns())
         
-        videoPath = os.path.abspath(os.path.join(outputDirectory, title+".mp4"))
+        videoPath = os.path.abspath(os.path.join(outputDirectory, title + '.' + argv.format))
 
-        print("Merging fragments (ffmpeg) into MP4...")
+        print("Merging fragments into video file (ffmpeg)...")
         ffmpegCmd = 'ffmpeg -protocol_whitelist file,http,https,tcp,tls,crypto -allowed_extensions ALL -i "' + os.path.abspath(audio_tmp_path) + '" -protocol_whitelist file,http,https,tcp,tls,crypto -allowed_extensions ALL -i "' + os.path.abspath(video_tmp_path) + '" -async 1 -c copy -bsf:a aac_adtstoasc -n "' + videoPath + '"'
+        if argv.showCmd:
+            print(colored(ffmpegCmd, 'yellow'))
 
         p = subprocess.Popen(ffmpegCmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p.communicate()
@@ -464,10 +474,12 @@ if __name__ == "__main__":
     parser.add_argument('-q', '--quality', type=int, required=False, help='Video Quality, usually [0-5]')
     parser.add_argument('-k', '--noKeyring', type=bool, required=False, default=False, help='Do not use system keyring (saved password)')
     parser.add_argument('-c', '--conn', type=int, required=False, default=16, help='Number of simultaneous connections [1-16]')
+    parser.add_argument('-f', '--format', type=str, required=False, default='mp4', help='Output video format, supported by ffmpeg')
     parser.add_argument('--noHeadless', required=False, default=False, action="store_true", help="Don not run Chromium in headless mode")
     parser.add_argument('--manualLogin', required=False, default=False, action="store_true", help="Force login manually")
     parser.add_argument('--overwrite', required=False, default=False, action="store_true", help="Overwrite downloaded temporary files")
     parser.add_argument('--keepTemp', required=False, default=False, action="store_true", help="Do not remove temporary files")
+    parser.add_argument('--showCmd', required=False, default=False, action="store_true", help="Show aria2c and ffmpeg commands executed (for debugging)")
 
     argv = parser.parse_args(["-h"] if len(sys.argv) == 1 else sys.argv[1:])
     
