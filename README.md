@@ -1,5 +1,6 @@
 # PyDestreamer
-Python port of destreamer - Microsoft Stream video downloader.
+
+<img src="https://github.com/vrbadev/PyDestreamer/raw/main/PyDestreamer.png" lign="left" width="180" height="180">  Python port of destreamer - Microsoft Stream video downloader.
 
 This project was inspired by <https://github.com/snobu/destreamer>, rewritten into Python from <https://github.com/sup3rgiu/MStreamDownloader>.
 
